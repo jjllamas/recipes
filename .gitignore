@@ -1,0 +1,21 @@
+# Configuración local (credenciales y entorno)
+includes/db_config.local.php
+.env
+.env.local
+.env.*.local
+
+# Sistema operativo
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editores e IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs y temporales PHP
+*.log
+*.cache
