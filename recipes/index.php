@@ -4,7 +4,7 @@ require_once __DIR__ . '/../includes/session.php';
 $selected_category = isset($_GET['category']) ? (int)$_GET['category'] : 0;
 $search_query = isset($_GET['search']) ? $_GET['search'] : '';
 
-$limit = 10;
+$limit = 12;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 
@@ -100,32 +100,47 @@ include __DIR__ . '/../includes/header.php';
     </div>
 </form>
 
-<div class="table-responsive">
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>Name</th>
-                <th>Categories</th>
-                <th>Difficulty</th>
-                <th>Prep Time (min)</th>
-                <th>Cook Time (min)</th>
-                <th>Details</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php while ($row = $result->fetch_assoc()): ?>
-                <tr>
-                    <td><?= htmlspecialchars($row['name']) ?></td>
-                    <td><?= htmlspecialchars($row['category_names']) ?></td>
-                    <td><?= htmlspecialchars($row['difficulty']) ?></td>
-                    <td><?= $row['prep_time'] ?></td>
-                    <td><?= $row['cook_time'] ?></td>
-                    <td><a href="<?= BASE_URL ?>/recipes/details.php?id=<?= $row['id'] ?>" class="btn btn-info btn-sm">View Details</a></td>
-                </tr>
-            <?php endwhile; ?>
-        </tbody>
-    </table>
-</div>
+<?php
+$difficultyColor = ['Easy' => 'success', 'Medium' => 'warning', 'Hard' => 'danger'];
+$rows = $result->fetch_all(MYSQLI_ASSOC);
+?>
+
+<?php if (empty($rows)): ?>
+    <div class="text-center py-5">
+        <i class="bi bi-journal-x" style="font-size:4rem; color:#ccc;"></i>
+        <h4 class="mt-3 text-muted">No recipes found</h4>
+        <p class="text-muted">Try adjusting your filters or create a new recipe.</p>
+        <a href="<?= BASE_URL ?>/recipes/create.php" class="btn btn-success mt-2">➕ Create New Recipe</a>
+    </div>
+<?php else: ?>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <?php foreach ($rows as $row): ?>
+            <?php $color = $difficultyColor[$row['difficulty']] ?? 'secondary'; ?>
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0"><?= htmlspecialchars($row['name']) ?></h5>
+                            <span class="badge bg-<?= $color ?> ms-2 flex-shrink-0"><?= $row['difficulty'] ?></span>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-tag"></i> <?= htmlspecialchars($row['category_names'] ?? '—') ?>
+                        </p>
+                        <div class="d-flex gap-3 small text-muted">
+                            <span><i class="bi bi-clock"></i> <?= $row['prep_time'] ?> min prep</span>
+                            <span><i class="bi bi-fire"></i> <?= $row['cook_time'] ?> min cook</span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <a href="<?= BASE_URL ?>/recipes/details.php?id=<?= $row['id'] ?>" class="btn btn-info btn-sm w-100">
+                            <i class="bi bi-eye"></i> View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
 
 <nav aria-label="Page navigation">
     <ul class="pagination justify-content-center">

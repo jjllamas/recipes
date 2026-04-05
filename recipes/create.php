@@ -102,11 +102,17 @@ include __DIR__ . '/../includes/header.php';
     </div>
     <div class="mb-3">
         <label class="form-label">Categories:</label>
-        <select name="categories[]" class="form-select" multiple required>
+        <div class="border rounded p-3 d-flex flex-wrap gap-3">
             <?php while ($category = $categories_result->fetch_assoc()): ?>
-                <option value="<?= $category['id'] ?>"><?= htmlspecialchars($category['name']) ?></option>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="categories[]"
+                           value="<?= $category['id'] ?>" id="cat-<?= $category['id'] ?>">
+                    <label class="form-check-label" for="cat-<?= $category['id'] ?>">
+                        <?= htmlspecialchars($category['name']) ?>
+                    </label>
+                </div>
             <?php endwhile; ?>
-        </select>
+        </div>
     </div>
     <div class="row">
         <div class="col-md-6 mb-3">

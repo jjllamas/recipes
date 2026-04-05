@@ -4,7 +4,29 @@ require_once __DIR__ . '/../includes/session.php';
 $current_week = isset($_GET['week']) ? (int)$_GET['week'] : date('W');
 $current_year = date('Y');
 
+$weekStart = new DateTime();
+$weekStart->setISODate($current_year, $current_week, 1);
+$weekEnd = new DateTime();
+$weekEnd->setISODate($current_year, $current_week, 7);
+$dateRange = $weekStart->format('d M') . ' – ' . $weekEnd->format('d M');
+
+// Días con su fecha real
 $days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+$day_dates = [];
+foreach ($days_of_week as $i => $day) {
+    $d = clone $weekStart;
+    $d->modify("+{$i} days");
+    $day_dates[$day] = $d->format('d M');
+}
+
+// Colores por tipo de comida
+$meal_colors = [
+    'Breakfast'       => ['bg' => '#cfe2ff', 'text' => '#084298'],
+    'Second Breakfast'=> ['bg' => '#e2d9f3', 'text' => '#432874'],
+    'Lunch'           => ['bg' => '#d1e7dd', 'text' => '#0a3622'],
+    'Afternoon Snack' => ['bg' => '#fff3cd', 'text' => '#664d03'],
+    'Dinner'          => ['bg' => '#f8d7da', 'text' => '#58151c'],
+];
 
 $meal_types = [
     'Breakfast'       => ['Breakfast'],
@@ -52,60 +74,145 @@ $menu_stmt->close();
 $pageTitle = 'Menu Planner';
 $extraHead = '
 <style>
-    .table-summary thead th { background-color:#cfe2ff; color:#000; border:2px solid #000; }
-    .table-summary tbody td, .table-summary tbody th { border:2px solid #000; }
-    .table-summary tbody .day-cell { background-color:#d4edda; color:#000; }
-    .table-summary tbody tr:hover { color:#fff; background-color:#6c757d; }
-    .table-summary tbody tr:hover .day-cell { background-color:#82c79d !important; }
-    .datalist-container { display:flex; flex-direction:column; justify-content:flex-end; }
-    .delete-btn { color:red; cursor:pointer; margin-left:10px; }
-    @media (max-width:768px) {
-        .table-summary { font-size:.75rem; }
-        th, td { white-space:nowrap; }
+    .table-summary { border-collapse: separate; border-spacing: 0; }
+    .table-summary thead th {
+        text-align: center;
+        font-size: .8rem;
+        font-weight: 600;
+        padding: 8px 6px;
+        border: 1px solid #dee2e6;
+        white-space: nowrap;
+    }
+    .table-summary tbody td { border: 1px solid #dee2e6; vertical-align: top; padding: 6px; }
+    .day-cell {
+        font-weight: 600;
+        font-size: .85rem;
+        text-align: center;
+        vertical-align: middle !important;
+        white-space: nowrap;
+        min-width: 54px;
+    }
+    .weekend-row .day-cell { background-color: #e8d5f5 !important; }
+    .weekend-row td { background-color: #faf5ff; }
+    .day-name { display: block; }
+    .day-date { display: block; font-size: .75rem; font-weight: 400; color: #6c757d; }
+    .today-row .day-cell { background-color: #fff3cd !important; }
+    .recipe-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #e9ecef;
+        border-radius: 20px;
+        padding: 2px 8px 2px 10px;
+        font-size: .78rem;
+        margin: 2px 2px;
+        max-width: 100%;
+    }
+    .recipe-pill a {
+        color: #212529;
+        text-decoration: none;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 120px;
+    }
+    .recipe-pill a:hover { text-decoration: underline; }
+    .recipe-pill .pill-delete {
+        cursor: pointer;
+        color: #adb5bd;
+        font-size: .7rem;
+        line-height: 1;
+        flex-shrink: 0;
+        border: none;
+        background: none;
+        padding: 0;
+    }
+    .recipe-pill .pill-delete:hover { color: #dc3545; }
+    .empty-cell { color: #ced4da; font-size: .75rem; text-align: center; padding: 4px 0; }
+    .datalist-container input { font-size: .78rem; }
+    @media (max-width: 768px) {
+        .table-summary { font-size: .72rem; }
+        .recipe-pill a { max-width: 70px; }
     }
 </style>';
 include __DIR__ . '/../includes/header.php';
+
+// Detectar día actual para marcarlo
+$today = (new DateTime())->format('l'); // 'Monday', 'Tuesday'...
+$todayWeek = (int)(new DateTime())->format('W');
+$todayYear = (int)(new DateTime())->format('Y');
+$isCurrentWeek = ($todayWeek === $current_week && $todayYear === $current_year);
 ?>
 
 <h1 class="text-center">🍽️ Weekly Menu Planner</h1>
-<br>
 
-<div class="text-center mb-4">
+<div class="text-center my-3">
     <?php $prev = max(1, $current_week - 1); $next = min(53, $current_week + 1); ?>
-    <a href="?week=<?= $prev ?>" class="btn btn-info btn-sm <?= $current_week <= 1 ? 'disabled' : '' ?>">Previous Week</a>
-    <span class="mx-2">Week <?= $current_week ?></span>
-    <a href="?week=<?= $next ?>" class="btn btn-info btn-sm <?= $current_week >= 53 ? 'disabled' : '' ?>">Next Week</a>
+    <a href="?week=<?= $prev ?>" class="btn btn-outline-secondary btn-sm <?= $current_week <= 1 ? 'disabled' : '' ?>">
+        <i class="bi bi-chevron-left"></i>
+    </a>
+    <span class="mx-3 fw-semibold">
+        Week <?= $current_week ?> &nbsp;·&nbsp;
+        <span class="text-muted fw-normal"><?= $dateRange ?></span>
+    </span>
+    <a href="?week=<?= $next ?>" class="btn btn-outline-secondary btn-sm <?= $current_week >= 53 ? 'disabled' : '' ?>">
+        <i class="bi bi-chevron-right"></i>
+    </a>
 </div>
 
-<h3>Weekly Summary — Week <?= $current_week ?></h3>
 <div class="table-responsive">
-    <table class="table table-bordered table-hover table-sm table-summary">
+    <table class="table table-bordered table-sm table-summary">
         <thead>
             <tr>
-                <th>Day</th>
-                <?php foreach ($meal_types as $meal => $categories): ?>
-                    <th><?= $meal ?></th>
+                <th style="background:#f8f9fa; min-width:54px;"></th>
+                <?php foreach ($meal_colors as $meal => $color): ?>
+                    <th style="background-color:<?= $color['bg'] ?>; color:<?= $color['text'] ?>;">
+                        <?= $meal ?>
+                    </th>
                 <?php endforeach; ?>
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($days_of_week as $day): ?>
-                <tr>
-                    <td class="day-cell"><?= $day ?></td>
-                    <?php foreach ($meal_types as $meal => $categories): ?>
+            <?php foreach ($days_of_week as $day):
+                $isToday   = $isCurrentWeek && $day === $today;
+                $isWeekend = in_array($day, ['Saturday', 'Sunday']);
+            ?>
+                <tr class="<?= $isToday ? 'today-row' : ($isWeekend ? 'weekend-row' : '') ?>">
+                    <td class="day-cell" style="background:#f8f9fa;">
+                        <span class="day-name"><?= substr($day, 0, 3) ?></span>
+                        <span class="day-date"><?= $day_dates[$day] ?></span>
+                        <?php if ($isToday): ?>
+                            <span class="badge bg-warning text-dark" style="font-size:.6rem;">Today</span>
+                        <?php endif; ?>
+                    </td>
+                    <?php foreach ($meal_types as $meal => $categories):
+                        $color = $meal_colors[$meal];
+                        $hasRecipes = isset($menu_data[$day][$meal]);
+                    ?>
                         <td>
-                            <ul class="list-unstyled mb-0 recipe-list">
-                                <?php if (isset($menu_data[$day][$meal])): ?>
+                            <div class="recipe-list d-flex flex-wrap align-items-start">
+                                <?php if ($hasRecipes): ?>
                                     <?php foreach ($menu_data[$day][$meal] as $recipe): ?>
-                                        <li>
-                                            <a href="<?= BASE_URL ?>/recipes/details.php?id=<?= $recipe['recipe_id'] ?>">- <?= htmlspecialchars($recipe['recipe_name']) ?></a>
-                                            <span class="delete-btn" onclick="deleteRecipe(<?= $recipe['menu_planner_id'] ?>, this)">❌</span>
-                                        </li>
+                                        <span class="recipe-pill">
+                                            <a href="<?= BASE_URL ?>/recipes/details.php?id=<?= $recipe['recipe_id'] ?>"
+                                               title="<?= htmlspecialchars($recipe['recipe_name']) ?>">
+                                                <?= htmlspecialchars($recipe['recipe_name']) ?>
+                                            </a>
+                                            <button class="pill-delete"
+                                                    onclick="deleteRecipe(<?= $recipe['menu_planner_id'] ?>, this)"
+                                                    title="Remove">✕</button>
+                                        </span>
                                     <?php endforeach; ?>
+                                <?php else: ?>
+                                    <span class="empty-cell w-100">— empty —</span>
                                 <?php endif; ?>
-                            </ul>
-                            <div class="datalist-container">
-                                <input list="recipes-<?= $meal ?>-list" class="form-control form-control-sm mt-1" oninput="assignRecipeId(this)" onchange="addRecipe('<?= $day ?>', '<?= $meal ?>', this)">
+                            </div>
+                            <div class="datalist-container mt-1">
+                                <input list="recipes-<?= $meal ?>-list"
+                                       class="form-control form-control-sm"
+                                       placeholder="Add recipe…"
+                                       oninput="assignRecipeId(this)"
+                                       onchange="addRecipe('<?= $day ?>', '<?= $meal ?>', this)">
                                 <datalist id="recipes-<?= $meal ?>-list">
                                     <?php foreach ($categories as $category): ?>
                                         <?php foreach ($recipes_by_category[$category] ?? [] as $recipe): ?>
@@ -123,11 +230,11 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <div class="d-flex flex-wrap gap-2 mt-4 justify-content-center">
-    <a href="<?= BASE_URL ?>/recipes/" class="btn btn-primary">📚 Recipe Library</a>
-    <a href="<?= BASE_URL ?>/menu/planner.php?week=<?= $current_week ?>" class="btn btn-secondary">🗓️ Accordion View</a>
+    <a href="<?= BASE_URL ?>/recipes/" class="btn btn-primary"><i class="bi bi-book"></i> Recipe Library</a>
+    <a href="<?= BASE_URL ?>/menu/planner.php?week=<?= $current_week ?>" class="btn btn-secondary"><i class="bi bi-calendar3"></i> Accordion View</a>
     <form action="<?= BASE_URL ?>/menu/shopping_list.php" method="POST">
         <input type="hidden" name="week" value="<?= $current_week ?>">
-        <button type="submit" class="btn btn-info">🛒 Generate Shopping List</button>
+        <button type="submit" class="btn btn-info"><i class="bi bi-cart3"></i> Generate Shopping List</button>
     </form>
 </div>
 
@@ -147,25 +254,45 @@ include __DIR__ . '/../includes/header.php';
         xhr.open("POST", "<?= BASE_URL ?>/api/add_to_menu.php", true);
         xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200 && xhr.responseText.includes("successfully")) {
+            if (xhr.readyState !== 4) return;
+            if (xhr.status === 200 && xhr.responseText.includes("successfully")) {
                 const recipeList = inputElement.closest('td').querySelector('.recipe-list');
-                const li = document.createElement('li');
-                li.innerHTML = `<a href="<?= BASE_URL ?>/recipes/details.php?id=${recipeId}">- ${recipeName}</a> <span class="delete-btn" onclick="deleteRecipe(${recipeId}, this)">❌</span>`;
-                recipeList.appendChild(li);
+                // Quitar el "— empty —" si existe
+                const emptySpan = recipeList.querySelector('.empty-cell');
+                if (emptySpan) emptySpan.remove();
+
+                const pill = document.createElement('span');
+                pill.className = 'recipe-pill';
+                pill.innerHTML = `<a href="<?= BASE_URL ?>/recipes/details.php?id=${recipeId}" title="${recipeName}">${recipeName}</a><button class="pill-delete" onclick="deleteRecipe(${recipeId}, this)" title="Remove">✕</button>`;
+                recipeList.appendChild(pill);
                 inputElement.value = '';
+                showToast(`"${recipeName}" added to ${mealType}`);
+            } else {
+                showToast('Failed to add recipe. Try again.', 'error');
             }
         };
         xhr.send(`recipe_id=${recipeId}&day=${day}&meal_type=${mealType}&week=<?= $current_week ?>&year=<?= $current_year ?>`);
     }
 
     function deleteRecipe(menuPlannerId, element) {
-        if (!confirm('Are you sure you want to delete this recipe?')) return;
+        if (!confirm('Are you sure you want to remove this recipe?')) return;
+        const pill = element.closest('.recipe-pill');
+        const recipeName = pill.querySelector('a')?.textContent.trim() ?? 'Recipe';
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "<?= BASE_URL ?>/api/delete_from_menu.php", true);
         xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200 && xhr.responseText.includes("successfully")) {
-                element.closest('li').remove();
+            if (xhr.readyState !== 4) return;
+            if (xhr.status === 200 && xhr.responseText.includes("successfully")) {
+                const recipeList = pill.closest('.recipe-list');
+                pill.remove();
+                // Si ya no quedan pills, mostrar "— empty —"
+                if (!recipeList.querySelector('.recipe-pill')) {
+                    recipeList.insertAdjacentHTML('beforeend', '<span class="empty-cell w-100">— empty —</span>');
+                }
+                showToast(`"${recipeName}" removed from menu`);
+            } else {
+                showToast('Failed to remove recipe. Try again.', 'error');
             }
         };
         xhr.send(`menu_planner_id=${menuPlannerId}`);

@@ -42,37 +42,79 @@ $pageTitle = htmlspecialchars($recipe['name']);
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<h2 class="text-center"><?= htmlspecialchars($recipe['name']) ?></h2>
+<?php
+$difficultyColor = ['Easy' => 'success', 'Medium' => 'warning', 'Hard' => 'danger'];
+$diffColor = $difficultyColor[$recipe['difficulty']] ?? 'secondary';
+?>
 
-<div class="card mt-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <strong>Description</strong>
-        <a href="<?= BASE_URL ?>/recipes/edit.php?id=<?= $recipe_id ?>" class="btn btn-warning btn-sm">Edit Recipe</a>
-    </div>
-    <div class="card-body">
-        <p><?= nl2br(htmlspecialchars($recipe['description'])) ?></p>
-    </div>
+<div class="d-flex justify-content-between align-items-center mt-2 mb-1">
+    <h2 class="mb-0"><?= htmlspecialchars($recipe['name']) ?></h2>
+    <a href="<?= BASE_URL ?>/recipes/edit.php?id=<?= $recipe_id ?>" class="btn btn-warning btn-sm">
+        <i class="bi bi-pencil"></i> Edit
+    </a>
 </div>
 
-<div class="card mt-4">
-    <div class="card-header"><strong>Details</strong></div>
+<div class="mb-3">
+    <?php foreach ($categories as $category): ?>
+        <span class="badge bg-secondary"><?= htmlspecialchars($category) ?></span>
+    <?php endforeach; ?>
+    <span class="badge bg-<?= $diffColor ?> ms-1"><?= htmlspecialchars($recipe['difficulty']) ?></span>
+</div>
+
+<!-- Stats row -->
+<div class="row g-3 text-center mb-4">
+    <div class="col-6 col-md-3">
+        <div class="border rounded p-3 h-100">
+            <i class="bi bi-stopwatch fs-3 text-primary"></i>
+            <div class="fw-bold fs-5"><?= $recipe['prep_time'] ?> min</div>
+            <small class="text-muted">Prep Time</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="border rounded p-3 h-100">
+            <i class="bi bi-fire fs-3 text-danger"></i>
+            <div class="fw-bold fs-5"><?= $recipe['cook_time'] ?> min</div>
+            <small class="text-muted">Cook Time</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="border rounded p-3 h-100">
+            <i class="bi bi-people fs-3 text-success"></i>
+            <div class="fw-bold fs-5"><?= $recipe['portions'] ?></div>
+            <small class="text-muted">Portions</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="border rounded p-3 h-100">
+            <i class="bi bi-lightning-charge fs-3 text-warning"></i>
+            <div class="fw-bold fs-5"><?= $recipe['calories_per_portion'] ?></div>
+            <small class="text-muted">kcal / portion</small>
+        </div>
+    </div>
+    <?php if (!empty($recipe['oven_temperature'])): ?>
+    <div class="col-6 col-md-3">
+        <div class="border rounded p-3 h-100">
+            <i class="bi bi-thermometer-half fs-3 text-secondary"></i>
+            <div class="fw-bold fs-5"><?= $recipe['oven_temperature'] ?> °C</div>
+            <small class="text-muted">Oven</small>
+        </div>
+    </div>
+    <?php endif; ?>
+    <?php if (!empty($recipe['airfryer_temperature'])): ?>
+    <div class="col-6 col-md-3">
+        <div class="border rounded p-3 h-100">
+            <i class="bi bi-wind fs-3 text-info"></i>
+            <div class="fw-bold fs-5"><?= $recipe['airfryer_temperature'] ?> °C</div>
+            <small class="text-muted">Airfryer</small>
+        </div>
+    </div>
+    <?php endif; ?>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header"><strong>Description</strong></div>
     <div class="card-body">
-        <p><strong>Categories:</strong>
-            <?php foreach ($categories as $category): ?>
-                <span class="badge bg-secondary"><?= htmlspecialchars($category) ?></span>
-            <?php endforeach; ?>
-        </p>
-        <p><strong>Preparation Time:</strong> <?= $recipe['prep_time'] ?> minutes</p>
-        <p><strong>Cooking Time:</strong> <?= $recipe['cook_time'] ?> minutes</p>
-        <p><strong>Difficulty:</strong> <?= htmlspecialchars($recipe['difficulty']) ?></p>
-        <p><strong>Portions:</strong> <?= $recipe['portions'] ?></p>
-        <p><strong>Calories per Portion:</strong> <?= $recipe['calories_per_portion'] ?> kcal</p>
-        <?php if (!empty($recipe['oven_temperature'])): ?>
-            <p><strong>Oven Temperature:</strong> <?= $recipe['oven_temperature'] ?> °C</p>
-        <?php endif; ?>
-        <?php if (!empty($recipe['airfryer_temperature'])): ?>
-            <p><strong>Airfryer Temperature:</strong> <?= $recipe['airfryer_temperature'] ?> °C</p>
-        <?php endif; ?>
+        <p class="mb-0"><?= nl2br(htmlspecialchars($recipe['description'])) ?></p>
     </div>
 </div>
 
