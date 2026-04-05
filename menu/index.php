@@ -236,6 +236,9 @@ $isCurrentWeek = ($todayWeek === $current_week && $todayYear === $current_year);
         <input type="hidden" name="week" value="<?= $current_week ?>">
         <button type="submit" class="btn btn-info"><i class="bi bi-cart3"></i> Generate Shopping List</button>
     </form>
+    <a href="<?= BASE_URL ?>/menu/print.php?week=<?= $current_week ?>" class="btn btn-outline-dark" target="_blank">
+        <i class="bi bi-printer"></i> Print Menu
+    </a>
 </div>
 
 <script>
