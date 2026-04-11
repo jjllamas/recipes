@@ -86,6 +86,11 @@ $current_year = (int)date('Y');
             <i class="bi bi-send"></i>
         </button>
     </div>
+    <div class="px-2 pt-2 pb-1">
+        <button class="btn btn-outline-secondary btn-sm w-100 text-start text-truncate" id="exampleBtn" title="Usar prompt de ejemplo y editarlo antes de enviar">
+            <i class="bi bi-lightbulb"></i> Ejemplo: menú semanal familiar — haz clic para editar antes de enviar
+        </button>
+    </div>
 </div>
 
 <!-- Apply menu modal -->
@@ -128,7 +133,31 @@ const chatMessages = document.getElementById('chatMessages');
 const userInput    = document.getElementById('userInput');
 const sendBtn      = document.getElementById('sendBtn');
 const clearBtn     = document.getElementById('clearBtn');
+const exampleBtn   = document.getElementById('exampleBtn');
 let pendingMenu    = null;
+
+const EXAMPLE_PROMPT = `Somos una familia de 6: una pareja y dos niños de 7 y 9 años.
+
+Esto es lo que tengo disponible esta semana:
+- [escribe aquí lo que tienes en nevera, despensa y congelador]
+
+Preferencias y restricciones:
+- Sin pasta normal (integral o legumbres como sustituto sí)
+- Poco arroz
+- Priorizar proteínas (carne, pescado, huevos, legumbres) y verduras
+- Snacks de media mañana aptos para llevar al cole (para los niños)
+- Menús saludables y variados, sin repetir platos dentro de lo posible
+- Los fines de semana y cuando encaje, preferir recetas de olla lenta
+
+Por favor, propón el menú completo de la semana sin hacerme preguntas adicionales. Usa únicamente los nombres exactos de las recetas de mi biblioteca, sin inventar ni parafrasear ninguna.`;
+
+exampleBtn.addEventListener('click', function() {
+    userInput.value = EXAMPLE_PROMPT;
+    userInput.style.height = 'auto';
+    userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
+    userInput.focus();
+    userInput.setSelectionRange(0, 0);
+});
 
 // Auto-resize textarea
 userInput.addEventListener('input', function() {
