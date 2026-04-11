@@ -130,7 +130,9 @@ $menu_stmt->close();
         }
         thead th.day-header {
             background: #e9ecef;
-            width: 13mm;
+        }
+        thead th.day-header.weekend-header {
+            background: #e8d5f5;
         }
 
         tbody td {
@@ -140,25 +142,13 @@ $menu_stmt->close();
             height: 28mm;
         }
         tbody td.day-cell {
-            background: #e9ecef;
-            text-align: center;
+            text-align: left;
             vertical-align: middle;
             font-weight: 700;
             font-size: 8pt;
             line-height: 1.4;
-            width: 13mm;
-        }
-        tbody td.day-cell .day-date {
-            display: block;
-            font-weight: 400;
-            font-size: 7pt;
-            color: #555;
-        }
-        tbody tr.weekend td.day-cell {
-            background: #e8d5f5;
-        }
-        tbody tr.weekend td {
-            background: #faf5ff;
+            width: 28mm;
+            white-space: nowrap;
         }
 
         .recipe-entry {
@@ -216,22 +206,24 @@ $menu_stmt->close();
         <thead>
             <tr>
                 <th class="day-header"></th>
-                <?php foreach ($meal_types as $meal): ?>
-                    <th style="background-color:<?= $meal_colors[$meal] ?>;"><?= $meal ?></th>
+                <?php foreach ($days_of_week as $i => $day):
+                    $isWeekend = in_array($day, ['Saturday', 'Sunday']);
+                    $date = (clone $weekStart)->modify("+{$i} days");
+                ?>
+                    <th class="day-header <?= $isWeekend ? 'weekend-header' : '' ?>">
+                        <?= $day_labels[$i] ?>
+                        <span class="day-date" style="display:block;font-weight:400;font-size:7pt;color:#555;"><?= $date->format('d M') ?></span>
+                    </th>
                 <?php endforeach; ?>
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($days_of_week as $i => $day):
-                $isWeekend = in_array($day, ['Saturday', 'Sunday']);
-                $date = (clone $weekStart)->modify("+{$i} days");
-            ?>
-                <tr class="<?= $isWeekend ? 'weekend' : '' ?>">
-                    <td class="day-cell">
-                        <?= $day_labels[$i] ?>
-                        <span class="day-date"><?= $date->format('d M') ?></span>
+            <?php foreach ($meal_types as $meal): ?>
+                <tr>
+                    <td class="day-cell" style="background-color:<?= $meal_colors[$meal] ?>; width:auto; text-align:left; padding: 3px 6px;">
+                        <?= $meal ?>
                     </td>
-                    <?php foreach ($meal_types as $meal): ?>
+                    <?php foreach ($days_of_week as $day): ?>
                         <td>
                             <?php if (!empty($menu_data[$day][$meal])): ?>
                                 <?php foreach ($menu_data[$day][$meal] as $name): ?>

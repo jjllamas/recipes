@@ -137,8 +137,58 @@ $diffColor = $difficultyColor[$recipe['difficulty']] ?? 'secondary';
     </div>
 </div>
 
+<?php if (!empty($recipe['prep_ahead']) || true): ?>
+<div class="card mt-4" id="prepCard">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>🕐 Prep day before</strong>
+        <button class="btn btn-outline-secondary btn-sm" id="generatePrepBtn" onclick="generatePrep()">
+            ✨ Generate with AI
+        </button>
+    </div>
+    <div class="card-body" id="prepBody">
+        <?php if (!empty($recipe['prep_ahead'])): ?>
+            <p class="mb-0" id="prepText"><?= nl2br(htmlspecialchars($recipe['prep_ahead'])) ?></p>
+        <?php else: ?>
+            <p class="text-muted mb-0" id="prepText">No prep notes yet. Click "Generate with AI" to create them.</p>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <p class="mt-3 text-center">
     <button class="btn btn-secondary" onclick="window.history.back();">Back</button>
 </p>
+
+<script>
+function generatePrep() {
+    const btn = document.getElementById('generatePrepBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating…';
+
+    const fd = new FormData();
+    fd.append('recipe_id', <?= $recipe_id ?>);
+
+    fetch('<?= BASE_URL ?>/api/generate_prep.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.textContent = '✨ Generate with AI';
+            if (data.error) { showToast(data.error, 'error'); return; }
+            const el = document.getElementById('prepText');
+            if (data.prep_ahead) {
+                el.innerHTML = data.prep_ahead.replace(/\n/g, '<br>');
+                showToast('Prep notes generated!');
+            } else {
+                el.textContent = 'No day-before prep needed for this recipe.';
+                showToast('No prep needed the day before.');
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '✨ Generate with AI';
+            showToast('Connection error', 'error');
+        });
+}
+</script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

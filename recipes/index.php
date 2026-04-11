@@ -75,8 +75,9 @@ include __DIR__ . '/../includes/header.php';
 
 <h2 class="text-center">📚 Recipe Library</h2>
 
-<div class="d-grid gap-2 mb-4">
-    <a href="<?= BASE_URL ?>/recipes/create.php" class="btn btn-success btn-lg">➕ Create New Recipe</a>
+<div class="d-flex gap-2 mb-4">
+    <a href="<?= BASE_URL ?>/recipes/create.php" class="btn btn-success flex-grow-1">➕ Create New Recipe</a>
+    <a href="<?= BASE_URL ?>/recipes/import_pdf.php" class="btn btn-outline-primary flex-grow-1">📄 Import from PDF</a>
 </div>
 
 <form method="GET" action="<?= BASE_URL ?>/recipes/" class="row g-3 mb-4">

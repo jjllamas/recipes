@@ -45,11 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $calories_per_portion = (int)$_POST['calories_per_portion'];
     $oven_temperature = !empty($_POST['oven_temperature']) ? (int)$_POST['oven_temperature'] : NULL;
     $airfryer_temperature = !empty($_POST['airfryer_temperature']) ? (int)$_POST['airfryer_temperature'] : NULL;
+    $prep_ahead = !empty($_POST['prep_ahead']) ? $_POST['prep_ahead'] : NULL;
 
     $conn->begin_transaction();
     try {
-        $update_stmt = $conn->prepare("UPDATE recipes SET name=?, description=?, prep_time=?, cook_time=?, difficulty=?, portions=?, calories_per_portion=?, oven_temperature=?, airfryer_temperature=? WHERE id=? AND user_id=?");
-        $update_stmt->bind_param("ssiiisiiiii", $name, $description, $prep_time, $cook_time, $difficulty, $portions, $calories_per_portion, $oven_temperature, $airfryer_temperature, $recipe_id, $_SESSION['user_id']);
+        $update_stmt = $conn->prepare("UPDATE recipes SET name=?, description=?, prep_time=?, cook_time=?, difficulty=?, portions=?, calories_per_portion=?, oven_temperature=?, airfryer_temperature=?, prep_ahead=? WHERE id=? AND user_id=?");
+        $update_stmt->bind_param("ssiisiiiisii", $name, $description, $prep_time, $cook_time, $difficulty, $portions, $calories_per_portion, $oven_temperature, $airfryer_temperature, $prep_ahead, $recipe_id, $_SESSION['user_id']);
         $update_stmt->execute();
 
         $conn->prepare("DELETE FROM recipe_categories WHERE recipe_id = ?")->bind_param("i", $recipe_id);
@@ -196,6 +197,13 @@ include __DIR__ . '/../includes/header.php';
             </div>
         <?php endwhile; ?>
     </div>
+    <div class="mb-3 mt-2">
+        <label class="form-label">🕐 Prep day before:</label>
+        <textarea name="prep_ahead" class="form-control" rows="3"
+                  placeholder="What to prepare the day before (optional)"><?= htmlspecialchars($recipe['prep_ahead'] ?? '') ?></textarea>
+        <div class="form-text">Leave empty or generate automatically from the recipe detail page.</div>
+    </div>
+
     <button type="button" class="btn btn-secondary mb-3" onclick="addIngredient()">Add Ingredient</button>
     <button type="submit" class="btn btn-primary w-100">Update Recipe</button>
 </form>

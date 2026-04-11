@@ -53,7 +53,7 @@ while ($row = $recipes_result->fetch_assoc()) {
 $recipes_stmt->close();
 
 $menu_stmt = $conn->prepare("
-    SELECT mp.*, r.id as recipe_id, r.name as recipe_name
+    SELECT mp.*, r.id as recipe_id, r.name as recipe_name, r.prep_ahead
     FROM menu_planner mp
     JOIN recipes r ON mp.recipe_id = r.id
     WHERE mp.week = ? AND mp.year = ? AND mp.user_id = ?");
@@ -66,7 +66,8 @@ while ($row = $menu_result->fetch_assoc()) {
     $menu_data[$row['day']][$row['meal_type']][] = [
         'recipe_name'     => $row['recipe_name'],
         'recipe_id'       => $row['recipe_id'],
-        'menu_planner_id' => $row['id']
+        'menu_planner_id' => $row['id'],
+        'prep_ahead'      => $row['prep_ahead'],
     ];
 }
 $menu_stmt->close();
@@ -74,29 +75,35 @@ $menu_stmt->close();
 $pageTitle = 'Menu Planner';
 $extraHead = '
 <style>
-    .table-summary { border-collapse: separate; border-spacing: 0; }
+    .table-summary {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+        table-layout: fixed;
+    }
     .table-summary thead th {
         text-align: center;
         font-size: .8rem;
         font-weight: 600;
-        padding: 8px 6px;
+        padding: 8px 4px;
         border: 1px solid #dee2e6;
-        white-space: nowrap;
     }
-    .table-summary tbody td { border: 1px solid #dee2e6; vertical-align: top; padding: 6px; }
-    .day-cell {
+    .table-summary thead th.col-label { width: 100px; }
+    .table-summary tbody td { border: 1px solid #dee2e6; vertical-align: top; padding: 6px 5px; }
+    .meal-label-cell {
         font-weight: 600;
-        font-size: .85rem;
-        text-align: center;
+        font-size: .8rem;
         vertical-align: middle !important;
-        white-space: nowrap;
-        min-width: 54px;
+        width: 100px;
+        padding: 6px 8px !important;
+        word-break: break-word;
     }
-    .weekend-row .day-cell { background-color: #e8d5f5 !important; }
-    .weekend-row td { background-color: #faf5ff; }
+    .weekend-col { background-color: #ede7f6 !important; }
+    thead th.weekend-col { background-color: #d1c4e9 !important; color: #311b92 !important; }
+    .today-col { background-color: #fffbe6; }
+    thead th.today-col { background-color: #fff59d !important; }
     .day-name { display: block; }
-    .day-date { display: block; font-size: .75rem; font-weight: 400; color: #6c757d; }
-    .today-row .day-cell { background-color: #fff3cd !important; }
+    .day-date { display: block; font-size: .72rem; font-weight: 400; color: #6c757d; }
     .recipe-pill {
         display: inline-flex;
         align-items: center;
@@ -160,36 +167,40 @@ $isCurrentWeek = ($todayWeek === $current_week && $todayYear === $current_year);
     </a>
 </div>
 
-<div class="table-responsive">
-    <table class="table table-bordered table-sm table-summary">
+<table class="table table-bordered table-sm table-summary">
         <thead>
             <tr>
-                <th style="background:#f8f9fa; min-width:54px;"></th>
-                <?php foreach ($meal_colors as $meal => $color): ?>
-                    <th style="background-color:<?= $color['bg'] ?>; color:<?= $color['text'] ?>;">
-                        <?= $meal ?>
-                    </th>
-                <?php endforeach; ?>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($days_of_week as $day):
-                $isToday   = $isCurrentWeek && $day === $today;
-                $isWeekend = in_array($day, ['Saturday', 'Sunday']);
-            ?>
-                <tr class="<?= $isToday ? 'today-row' : ($isWeekend ? 'weekend-row' : '') ?>">
-                    <td class="day-cell" style="background:#f8f9fa;">
+                <th class="col-label" style="background:#f8f9fa;"></th>
+                <?php foreach ($days_of_week as $day):
+                    $isToday   = $isCurrentWeek && $day === $today;
+                    $isWeekend = in_array($day, ['Saturday', 'Sunday']);
+                    $colClass  = $isToday ? 'today-col' : ($isWeekend ? 'weekend-col' : '');
+                ?>
+                    <th class="<?= $colClass ?>">
                         <span class="day-name"><?= substr($day, 0, 3) ?></span>
                         <span class="day-date"><?= $day_dates[$day] ?></span>
                         <?php if ($isToday): ?>
                             <span class="badge bg-warning text-dark" style="font-size:.6rem;">Today</span>
                         <?php endif; ?>
+                    </th>
+                <?php endforeach; ?>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($meal_types as $meal => $categories):
+                $color = $meal_colors[$meal];
+            ?>
+                <tr>
+                    <td class="meal-label-cell" style="background-color:<?= $color['bg'] ?>; color:<?= $color['text'] ?>;">
+                        <?= $meal ?>
                     </td>
-                    <?php foreach ($meal_types as $meal => $categories):
-                        $color = $meal_colors[$meal];
+                    <?php foreach ($days_of_week as $day):
+                        $isToday   = $isCurrentWeek && $day === $today;
+                        $isWeekend = in_array($day, ['Saturday', 'Sunday']);
+                        $colClass  = $isToday ? 'today-col' : ($isWeekend ? 'weekend-col' : '');
                         $hasRecipes = isset($menu_data[$day][$meal]);
                     ?>
-                        <td>
+                        <td class="<?= $colClass ?>">
                             <div class="recipe-list d-flex flex-wrap align-items-start">
                                 <?php if ($hasRecipes): ?>
                                     <?php foreach ($menu_data[$day][$meal] as $recipe): ?>
@@ -208,12 +219,12 @@ $isCurrentWeek = ($todayWeek === $current_week && $todayYear === $current_year);
                                 <?php endif; ?>
                             </div>
                             <div class="datalist-container mt-1">
-                                <input list="recipes-<?= $meal ?>-list"
+                                <input list="recipes-<?= $meal ?>-<?= $day ?>-list"
                                        class="form-control form-control-sm"
                                        placeholder="Add recipe…"
                                        oninput="assignRecipeId(this)"
                                        onchange="addRecipe('<?= $day ?>', '<?= $meal ?>', this)">
-                                <datalist id="recipes-<?= $meal ?>-list">
+                                <datalist id="recipes-<?= $meal ?>-<?= $day ?>-list">
                                     <?php foreach ($categories as $category): ?>
                                         <?php foreach ($recipes_by_category[$category] ?? [] as $recipe): ?>
                                             <option value="<?= htmlspecialchars($recipe['name']) ?>" data-id="<?= $recipe['id'] ?>"></option>
@@ -225,13 +236,43 @@ $isCurrentWeek = ($todayWeek === $current_week && $todayYear === $current_year);
                     <?php endforeach; ?>
                 </tr>
             <?php endforeach; ?>
+
+            <!-- Prep day before row -->
+            <tr>
+                <td class="meal-label-cell" style="background:#fff8e1; color:#795548;">
+                    🕐 Prep<br><small class="fw-normal">noche anterior</small>
+                </td>
+                <?php foreach ($days_of_week as $idx => $day):
+                    $isToday   = $isCurrentWeek && $day === $today;
+                    $isWeekend = in_array($day, ['Saturday', 'Sunday']);
+                    $colClass  = $isToday ? 'today-col' : ($isWeekend ? 'weekend-col' : '');
+                    // Show prep notes for THIS day's recipes (what to do the night before)
+                    $prep_notes = [];
+                    foreach ($meal_types as $meal => $cats) {
+                        foreach ($menu_data[$day][$meal] ?? [] as $recipe) {
+                            if (!empty($recipe['prep_ahead'])) {
+                                $prep_notes[] = '<strong>' . htmlspecialchars($recipe['recipe_name']) . ':</strong> ' . htmlspecialchars($recipe['prep_ahead']);
+                            }
+                        }
+                    }
+                ?>
+                    <td class="<?= $colClass ?>" style="font-size:.78rem; background-color: <?= $isWeekend ? '' : '#fffdf0' ?>;">
+                        <?php if ($prep_notes): ?>
+                            <?= implode('<hr class="my-1">', $prep_notes) ?>
+                        <?php else: ?>
+                            <span class="empty-cell">—</span>
+                        <?php endif; ?>
+                    </td>
+                <?php endforeach; ?>
+            </tr>
         </tbody>
     </table>
-</div>
 
 <div class="d-flex flex-wrap gap-2 mt-4 justify-content-center">
     <a href="<?= BASE_URL ?>/recipes/" class="btn btn-primary"><i class="bi bi-book"></i> Recipe Library</a>
     <a href="<?= BASE_URL ?>/menu/planner.php?week=<?= $current_week ?>" class="btn btn-secondary"><i class="bi bi-calendar3"></i> Accordion View</a>
+    <a href="<?= BASE_URL ?>/menu/import_menu.php" class="btn btn-outline-primary"><i class="bi bi-cloud-upload"></i> Import Menu</a>
+    <a href="<?= BASE_URL ?>/menu/chat.php" class="btn btn-outline-success"><i class="bi bi-robot"></i> AI Assistant</a>
     <form action="<?= BASE_URL ?>/menu/shopping_list.php" method="POST">
         <input type="hidden" name="week" value="<?= $current_week ?>">
         <button type="submit" class="btn btn-info"><i class="bi bi-cart3"></i> Generate Shopping List</button>
