@@ -1,5 +1,9 @@
 <?php
+ini_set('display_errors', '0');
+error_reporting(0);
+ob_start();
 require_once __DIR__ . '/../includes/session.php';
+ob_clean();
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

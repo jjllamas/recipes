@@ -3,6 +3,7 @@ includes/db_config.local.php
 .env
 .env.local
 .env.*.local
+.deploy.conf
 
 # Sistema operativo
 Thumbs.db
@@ -19,3 +20,7 @@ Desktop.ini
 # Logs y temporales PHP
 *.log
 *.cache
+.last_deploy
+.claude/settings.local.json
+.claude/settings.json
+

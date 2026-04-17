@@ -234,7 +234,8 @@ function appendMenuProposal(proposal) {
     meals.forEach(meal => {
         tableHtml += `<tr><th class="text-nowrap">${meal}</th>`;
         days.forEach(day => {
-            const recipes = proposal.menu?.[day]?.[meal] || [];
+            let recipes = proposal.menu?.[day]?.[meal] ?? [];
+            if (!Array.isArray(recipes)) recipes = recipes ? [recipes] : [];
             tableHtml += `<td>${recipes.map(r => escapeHtml(r)).join('<br>') || '<span class="text-muted">—</span>'}</td>`;
         });
         tableHtml += '</tr>';
